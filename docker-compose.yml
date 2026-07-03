@@ -53,7 +53,10 @@ services:
     command: sh -lc "corepack enable && pnpm install --frozen-lockfile=false && pnpm dev"
     environment:
       VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8080}
-    volumes: ["./apps/web:/app"]
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.svelte-kit
     ports: ["${WEB_HOST_PORT:-5173}:5173"]
     depends_on: [api]
 volumes:
