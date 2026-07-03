@@ -1,0 +1,34 @@
+name: ci
+on:
+  push:
+  pull_request:
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Backend tests
+        run: docker run --rm -v "$PWD":/workspace -w /workspace gradle:8.14.2-jdk21 gradle --no-daemon :apps:api:test
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.7.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm, cache-dependency-path: apps/web/pnpm-lock.yaml }
+      - run: cd apps/web && pnpm install --frozen-lockfile=false && pnpm lint && pnpm build
+  contracts-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose --env-file .env.example config >/tmp/compose.yml
+      - run: cp .env.production.example .env.production && docker compose --env-file .env.production -f docker-compose.prod.yml config >/tmp/prod-compose.yml
+      - run: bash -n tests/smoke/smoke.sh && bash -n tests/smoke/broker-smoke.sh
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+      - run: npm install -g @redocly/cli @asyncapi/cli
+      - run: redocly lint contracts/openapi/integration-fabric.openapi.yaml
+      - run: asyncapi validate contracts/asyncapi/integration-fabric.asyncapi.yaml
+        env:
+          SUPPRESS_NO_CONFIG_WARNING: "true"

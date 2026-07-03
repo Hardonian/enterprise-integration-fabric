@@ -1,0 +1,7 @@
+flowchart LR
+  T1[Tenant A request] --> A1[tenant_id filter]
+  T2[Tenant B request] --> A2[tenant_id filter]
+  A1 --> DB1[(Rows where tenant_id=A)]
+  A2 --> DB2[(Rows where tenant_id=B)]
+  A1 -. blocked .-> DB2
+  A2 -. blocked .-> DB1

@@ -1,0 +1,8 @@
+sequenceDiagram
+  participant Product
+  participant API
+  participant Camel
+  participant Broker
+  Product->>API: grade published
+  API->>Camel: grade-sync-outbound
+  Camel->>Broker: lms.grade.published

@@ -1,0 +1,11 @@
+sequenceDiagram
+  participant LMS
+  participant API
+  participant Camel
+  participant Broker
+  participant CRM
+  LMS->>API: course/lead event with tenant_id
+  API->>Camel: direct route
+  Camel->>Camel: validate, correlation_id, trace
+  Camel->>Broker: crm.lead.created
+  CRM-->>Broker: consume lead

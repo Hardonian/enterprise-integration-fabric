@@ -1,0 +1,52 @@
+asyncapi: 3.1.0
+info:
+  title: Enterprise Integration Fabric Events
+  version: 0.1.0
+  description: Kafka-compatible event contracts using a CloudEvents-like envelope.
+servers:
+  redpanda:
+    host: localhost:19092
+    protocol: kafka
+channels:
+  lms.course.created: { address: lms.course.created, messages: { courseCreated: { $ref: '#/components/messages/LmsCourseCreated' } } }
+  sis.enrollment.updated: { address: sis.enrollment.updated, messages: { enrollmentUpdated: { $ref: '#/components/messages/SisEnrollmentUpdated' } } }
+  lms.grade.published: { address: lms.grade.published, messages: { gradePublished: { $ref: '#/components/messages/LmsGradePublished' } } }
+  crm.lead.created: { address: crm.lead.created, messages: { leadCreated: { $ref: '#/components/messages/CrmLeadCreated' } } }
+  billing.customer.updated: { address: billing.customer.updated, messages: { customerUpdated: { $ref: '#/components/messages/BillingCustomerUpdated' } } }
+  integration.dead_lettered: { address: integration.dead_lettered, messages: { deadLettered: { $ref: '#/components/messages/IntegrationDeadLettered' } } }
+operations:
+  publishCourseCreated: { action: send, channel: { $ref: '#/channels/lms.course.created' } }
+  publishEnrollmentUpdated: { action: send, channel: { $ref: '#/channels/sis.enrollment.updated' } }
+  publishGradePublished: { action: send, channel: { $ref: '#/channels/lms.grade.published' } }
+  publishLeadCreated: { action: send, channel: { $ref: '#/channels/crm.lead.created' } }
+  publishCustomerUpdated: { action: send, channel: { $ref: '#/channels/billing.customer.updated' } }
+  publishDeadLettered: { action: send, channel: { $ref: '#/channels/integration.dead_lettered' } }
+components:
+  messages:
+    LmsCourseCreated: { name: lms.course.created, payload: { allOf: [ { $ref: '#/components/schemas/EventEnvelope' }, { type: object, properties: { data: { $ref: '#/components/schemas/CourseData' } } } ] } }
+    SisEnrollmentUpdated: { name: sis.enrollment.updated, payload: { allOf: [ { $ref: '#/components/schemas/EventEnvelope' }, { type: object, properties: { data: { $ref: '#/components/schemas/EnrollmentData' } } } ] } }
+    LmsGradePublished: { name: lms.grade.published, payload: { allOf: [ { $ref: '#/components/schemas/EventEnvelope' }, { type: object, properties: { data: { $ref: '#/components/schemas/GradeData' } } } ] } }
+    CrmLeadCreated: { name: crm.lead.created, payload: { allOf: [ { $ref: '#/components/schemas/EventEnvelope' }, { type: object, properties: { data: { $ref: '#/components/schemas/LeadData' } } } ] } }
+    BillingCustomerUpdated: { name: billing.customer.updated, payload: { allOf: [ { $ref: '#/components/schemas/EventEnvelope' }, { type: object, properties: { data: { $ref: '#/components/schemas/BillingData' } } } ] } }
+    IntegrationDeadLettered: { name: integration.dead_lettered, payload: { allOf: [ { $ref: '#/components/schemas/EventEnvelope' }, { type: object, properties: { data: { $ref: '#/components/schemas/DeadLetterData' } } } ] } }
+  schemas:
+    EventEnvelope:
+      type: object
+      required: [id, source, specversion, type, subject, time, datacontenttype, tenant_id, correlation_id, data]
+      properties:
+        id: { type: string }
+        source: { type: string }
+        specversion: { type: string, const: '1.0' }
+        type: { type: string }
+        subject: { type: string }
+        time: { type: string, format: date-time }
+        datacontenttype: { type: string, const: application/json }
+        tenant_id: { type: string }
+        correlation_id: { type: string }
+        data: { type: object }
+    CourseData: { type: object, required: [courseId, title], properties: { courseId: { type: string }, title: { type: string }, status: { type: string } } }
+    EnrollmentData: { type: object, required: [courseId, learnerId, status], properties: { courseId: { type: string }, learnerId: { type: string }, status: { type: string } } }
+    GradeData: { type: object, required: [courseId, learnerId, grade], properties: { courseId: { type: string }, learnerId: { type: string }, grade: { type: number } } }
+    LeadData: { type: object, required: [institutionId, contactEmail], properties: { institutionId: { type: string }, contactEmail: { type: string }, sourceCampaign: { type: string } } }
+    BillingData: { type: object, required: [externalCustomerId, status], properties: { externalCustomerId: { type: string }, status: { type: string } } }
+    DeadLetterData: { type: object, required: [originalType, failureReason, originalPayload], properties: { originalType: { type: string }, failureReason: { type: string }, originalPayload: { type: object } } }

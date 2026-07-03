@@ -1,0 +1,7 @@
+flowchart TD
+  A[Incoming event] --> B{Valid tenant and payload?}
+  B -- no --> E[Structured 400]
+  B -- yes --> C[Camel route]
+  C --> D{Transient failure?}
+  D -- retry succeeds --> P[Persist trace and publish]
+  D -- retries exhausted --> Q[dead_letter_events + trace]

@@ -1,0 +1,9 @@
+sequenceDiagram
+  participant SIS
+  participant API
+  participant Camel
+  participant DB
+  SIS->>API: enrollment updated
+  API->>Camel: sis-enrollment-inbound
+  Camel->>DB: write integration_event + trace
+  API->>DB: entitlement lookup by tenant/subject

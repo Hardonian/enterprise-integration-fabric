@@ -1,0 +1,12 @@
+app:
+  dev-auth-enabled: true
+  broker-enabled: false
+spring:
+  datasource:
+    url: jdbc:h2:mem:fabric_test;MODE=MariaDB;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  flyway:
+    locations: classpath:db/testmigration
+    clean-disabled: false

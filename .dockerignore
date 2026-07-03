@@ -1,0 +1,8 @@
+.git
+.gradle
+.kotlin
+apps/api/build
+apps/web/node_modules
+apps/web/.svelte-kit
+apps/web/build
+.env

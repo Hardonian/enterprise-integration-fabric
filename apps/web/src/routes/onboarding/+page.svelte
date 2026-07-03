@@ -1,0 +1,1 @@
+<h1>Onboarding checklist</h1><ol class="card"><li>Create tenant and institution.</li><li>Register LMS, SIS, CRM, billing, identity, analytics, and support connectors as needed.</li><li>Store real secrets in a vault and save references only.</li><li>Run sample event ingestion and verify trace search.</li><li>Confirm DLQ runbook ownership and replay approval path.</li></ol>

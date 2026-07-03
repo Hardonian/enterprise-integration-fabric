@@ -1,0 +1,223 @@
+openapi: 3.1.0
+info:
+  title: Enterprise Integration Fabric API
+  version: 0.1.0
+  license:
+    name: MIT
+    identifier: MIT
+  description: Tenant-scoped management and operations API for enterprise integration fabric.
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Health
+      security: []
+      responses:
+        '200': { description: UP }
+        '404': { description: Health route not found }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /ready:
+    get:
+      operationId: getReadiness
+      summary: Readiness
+      security: []
+      responses:
+        '200': { description: READY }
+        '404': { description: Readiness route not found }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /version:
+    get:
+      operationId: getVersion
+      summary: Version
+      security: []
+      responses:
+        '200': { description: Version metadata }
+        '404': { description: Version route not found }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/tenants:
+    get:
+      operationId: listTenants
+      summary: List visible tenants
+      responses:
+        '200': { description: Tenant list }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    post:
+      operationId: createTenant
+      summary: Create tenant
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/TenantRequest' } } } }
+      responses:
+        '200': { description: Created tenant }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Duplicate tenant }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/tenants/{tenantId}:
+    parameters: [ { $ref: '#/components/parameters/TenantId' } ]
+    get:
+      operationId: getTenant
+      summary: Get tenant
+      responses:
+        '200': { description: Tenant }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Tenant not found }
+    put:
+      operationId: updateTenant
+      summary: Update tenant
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/TenantRequest' } } } }
+      responses:
+        '200': { description: Updated tenant }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Tenant not found }
+    delete:
+      operationId: deleteTenant
+      summary: Delete tenant
+      responses:
+        '200': { description: Deleted tenant }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Tenant not found }
+  /api/tenants/{tenantId}/connectors:
+    parameters: [ { $ref: '#/components/parameters/TenantId' } ]
+    get:
+      operationId: listConnectors
+      summary: List tenant connectors
+      responses:
+        '200': { description: Connector list }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createConnector
+      summary: Create tenant connector
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ConnectorRequest' } } } }
+      responses:
+        '200': { description: Created connector }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { description: Duplicate connector }
+  /api/tenants/{tenantId}/connectors/{connectorId}:
+    parameters: [ { $ref: '#/components/parameters/TenantId' }, { name: connectorId, in: path, required: true, schema: { type: string } } ]
+    get:
+      operationId: getConnector
+      summary: Get tenant connector
+      responses:
+        '200': { description: Connector }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Connector not found }
+    put:
+      operationId: updateConnector
+      summary: Update tenant connector
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ConnectorRequest' } } } }
+      responses:
+        '200': { description: Updated connector }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Connector not found }
+    delete:
+      operationId: deleteConnector
+      summary: Delete tenant connector
+      responses:
+        '200': { description: Deleted connector }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Connector not found }
+  /api/events/{route}:
+    post:
+      operationId: ingestEvent
+      summary: Ingest integration event
+      parameters: [ { name: route, in: path, required: true, schema: { type: string, enum: [lms-course, sis-enrollment, grade-sync, crm-lead, billing-customer] } } ]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/EventEnvelope' } } } }
+      responses:
+        '200': { description: Accepted or DLQ result }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Unknown route }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/simulations/grade-sync:
+    post: { operationId: simulateGradeSync, summary: Grade sync simulation, requestBody: { $ref: '#/components/requestBodies/EventEnvelopeBody' }, responses: { '200': { description: Accepted or DLQ result }, '400': { $ref: '#/components/responses/BadRequest' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+  /api/simulations/crm-handoff:
+    post: { operationId: simulateCrmHandoff, summary: CRM handoff simulation, requestBody: { $ref: '#/components/requestBodies/EventEnvelopeBody' }, responses: { '200': { description: Accepted or DLQ result }, '400': { $ref: '#/components/responses/BadRequest' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+  /api/simulations/billing-event:
+    post: { operationId: simulateBillingEvent, summary: Billing event simulation, requestBody: { $ref: '#/components/requestBodies/EventEnvelopeBody' }, responses: { '200': { description: Accepted or DLQ result }, '400': { $ref: '#/components/responses/BadRequest' }, '403': { $ref: '#/components/responses/Forbidden' } } }
+  /api/tenants/{tenantId}/traces/{correlationId}:
+    get:
+      operationId: getEventTrace
+      summary: Lookup event trace by tenant and correlation ID
+      parameters: [ { $ref: '#/components/parameters/TenantId' }, { name: correlationId, in: path, required: true, schema: { type: string } } ]
+      responses:
+        '200': { description: Trace records }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Trace not found }
+  /api/tenants/{tenantId}/dlq:
+    get:
+      operationId: listDeadLetterEvents
+      summary: List tenant dead-letter events
+      parameters: [ { $ref: '#/components/parameters/TenantId' } ]
+      responses:
+        '200': { description: DLQ events }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/tenants/{tenantId}/entitlements:
+    get:
+      operationId: listEntitlements
+      summary: List tenant entitlements
+      parameters: [ { $ref: '#/components/parameters/TenantId' }, { name: subjectId, in: query, required: false, schema: { type: string } } ]
+      responses:
+        '200': { description: Entitlements }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    TenantId: { name: tenantId, in: path, required: true, schema: { type: string } }
+  requestBodies:
+    EventEnvelopeBody:
+      required: true
+      content: { application/json: { schema: { $ref: '#/components/schemas/EventEnvelope' } } }
+  responses:
+    BadRequest: { description: Structured bad request, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+    Unauthorized: { description: Missing or invalid bearer token }
+    Forbidden: { description: Tenant access denied, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+    InternalError: { description: Structured internal error, content: { application/json: { schema: { $ref: '#/components/schemas/ApiError' } } } }
+  schemas:
+    TenantRequest:
+      type: object
+      required: [id, name]
+      properties: { id: { type: string }, name: { type: string }, status: { type: string, default: ACTIVE } }
+    ConnectorRequest:
+      type: object
+      required: [id, name, systemType, baseUrl, credentialReference]
+      properties: { id: { type: string }, name: { type: string }, systemType: { type: string }, baseUrl: { type: string }, credentialReference: { type: string }, status: { type: string, default: ACTIVE } }
+    EventEnvelope:
+      type: object
+      required: [tenant_id, data]
+      properties:
+        id: { type: string }
+        source: { type: string }
+        specversion: { type: string, default: '1.0' }
+        type: { type: string }
+        subject: { type: string }
+        time: { type: string, format: date-time }
+        datacontenttype: { type: string, default: application/json }
+        tenant_id: { type: string }
+        connector_id: { type: string }
+        correlation_id: { type: string }
+        data: { type: object, additionalProperties: true }
+    ApiError:
+      type: object
+      required: [timestamp, status, error, code, message, path]
+      properties: { timestamp: { type: string }, status: { type: integer }, error: { type: string }, code: { type: string }, message: { type: string }, path: { type: string } }

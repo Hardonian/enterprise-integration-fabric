@@ -1,0 +1,7 @@
+flowchart LR
+  Institution[Institution] -->|LMS/SIS events| Fabric[Enterprise Integration Fabric]
+  Fabric --> CRM[CRM]
+  Fabric --> Billing[Billing]
+  Fabric --> Analytics[Analytics]
+  Fabric --> Support[Support]
+  IdP[Keycloak / Enterprise IdP] --> Fabric

@@ -1,0 +1,6 @@
+flowchart TB
+  Web[SvelteKit Dashboard] --> API[Kotlin Spring Boot API]
+  API --> Camel[Apache Camel Routes]
+  Camel --> Redpanda[(Redpanda Kafka-compatible broker)]
+  API --> DB[(MariaDB operational store)]
+  Keycloak[Keycloak OIDC] --> API
