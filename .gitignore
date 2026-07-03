@@ -1,10 +1,12 @@
 .env
-.env.production
-.env.local
+.env.*
+!.env.example
+!.env.production.example
 .gradle/
 build/
 apps/api/build/
 apps/web/.svelte-kit/
 apps/web/build/
 apps/web/node_modules/
+apps/web/.pnpm-store/
 .DS_Store
