@@ -16,7 +16,12 @@ jobs:
       - uses: pnpm/action-setup@v4
         with: { version: 11.7.0 }
       - uses: actions/setup-node@v4
-        with: { node-version: 24, cache: pnpm, cache-dependency-path: apps/web/pnpm-lock.yaml }
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            apps/web/pnpm-lock.yaml
       - run: cd apps/web && pnpm install --frozen-lockfile=false && pnpm lint && pnpm build
   contracts-compose:
     runs-on: ubuntu-latest
