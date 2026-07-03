@@ -11,14 +11,14 @@
     "lint": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
-    "@sveltejs/adapter-static": "latest",
-    "@sveltejs/kit": "latest",
-    "@sveltejs/vite-plugin-svelte": "latest",
-    "svelte": "latest",
-    "vite": "latest"
+    "@sveltejs/adapter-static": "3.0.10",
+    "@sveltejs/kit": "2.69.0",
+    "@sveltejs/vite-plugin-svelte": "7.1.2",
+    "svelte": "5.56.4",
+    "vite": "8.1.2"
   },
   "devDependencies": {
-    "svelte-check": "latest",
-    "typescript": "latest"
+    "svelte-check": "4.7.1",
+    "typescript": "6.0.3"
   }
 }
