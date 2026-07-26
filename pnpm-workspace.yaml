@@ -1,5 +1,11 @@
 packages:
   - apps/web
 
+minimumReleaseAgeExclude:
+  - postcss@8.5.18
+  - '@sveltejs/kit@2.69.1'
+
 overrides:
+  '@sveltejs/kit@<=2.69.0': ^2.69.1
   cookie: ^1.1.1
+  postcss@<=8.5.17: ^8.5.18
