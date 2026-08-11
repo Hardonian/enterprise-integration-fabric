@@ -1,0 +1,11 @@
+{
+  "name": "enterprise-integration-fabric",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "pnpm": {
+    "overrides": {
+      "cookie": "1.1.1",
+      "nanoid": "3.3.17"
+    }
+  }
+}
