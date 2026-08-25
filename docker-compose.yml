@@ -42,10 +42,13 @@ services:
       BROKER_ENABLED: ${BROKER_ENABLED:-true}
       KAFKA_BOOTSTRAP: ${KAFKA_BOOTSTRAP:-redpanda:9092}
       OIDC_ISSUER_URI: ${OIDC_ISSUER_URI:-http://keycloak:8080/realms/integration-fabric}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
     depends_on:
       mariadb: { condition: service_healthy }
       redpanda: { condition: service_started }
       keycloak: { condition: service_started }
+      redis: { condition: service_healthy }
     ports: ["${API_HOST_PORT:-8080}:8080"]
   web:
     image: node:24-alpine
@@ -59,5 +62,13 @@ services:
       - /app/.svelte-kit
     ports: ["${WEB_HOST_PORT:-5173}:5173"]
     depends_on: [api]
+  redis:
+    image: redis:7.2-alpine
+    ports: ["${REDIS_HOST_PORT:-6379}:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 volumes:
   mariadb-data:
