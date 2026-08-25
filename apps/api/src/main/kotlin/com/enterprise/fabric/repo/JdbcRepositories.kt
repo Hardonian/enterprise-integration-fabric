@@ -64,6 +64,11 @@ class EventRepo(private val jdbc: JdbcTemplate, private val mapper: ObjectMapper
     }
     fun traces(tenantId: String, correlationId: String): List<EventTrace> = jdbc.query("select * from event_traces where tenant_id=? and correlation_id=? order by created_at asc", traceMapper, tenantId, correlationId)
     fun dlq(tenantId: String): List<DeadLetterEvent> = jdbc.query("select * from dead_letter_events where tenant_id=? order by created_at desc", dlqMapper, tenantId)
+    fun getDlq(tenantId: String, id: String): DeadLetterEvent = jdbc.query("select * from dead_letter_events where tenant_id=? and id=?", dlqMapper, tenantId, id).firstOrNull() ?: throw NotFoundException("Dead letter event not found: $id")
+    fun deleteDlq(tenantId: String, id: String) { jdbc.update("delete from dead_letter_events where tenant_id=? and id=?", tenantId, id) }
+    fun checkAndRecordIdempotency(tenantId: String, key: String, eventId: String): Boolean = try {
+        jdbc.update("insert into idempotency_records(id, tenant_id, event_id) values (?, ?, ?)", key, tenantId, eventId) > 0
+    } catch (e: Exception) { false }
     fun entitlements(tenantId: String, subjectId: String?) = if (subjectId == null) jdbc.query("select * from entitlements where tenant_id=? order by created_at desc", entMapper, tenantId) else jdbc.query("select * from entitlements where tenant_id=? and subject_id=? order by created_at desc", entMapper, tenantId, subjectId)
     private val traceMapper = RowMapper { rs: ResultSet, _: Int -> EventTrace(rs.getString("id"), rs.getString("tenant_id"), rs.getString("event_id"), rs.getString("correlation_id"), rs.getString("route_name"), rs.getString("step"), rs.getString("status"), rs.getString("message"), rs.getTimestamp("created_at").toInstant()) }
     private val dlqMapper = RowMapper { rs: ResultSet, _: Int -> DeadLetterEvent(rs.getString("id"), rs.getString("tenant_id"), rs.getString("event_type"), rs.getString("correlation_id"), rs.getString("failure_reason"), mapper.readValue(rs.getString("payload"), Map::class.java) as Map<String, Any?>, rs.getTimestamp("created_at").toInstant()) }

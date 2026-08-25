@@ -1,6 +1,6 @@
 <script lang="ts">
   let nav = [
-    ['/', 'Overview'], ['/tenants', 'Tenants'], ['/connectors', 'Connectors'], ['/traces', 'Trace Search'], ['/dlq', 'DLQ'], ['/contracts', 'Contracts'], ['/architecture', 'Architecture'], ['/onboarding', 'Onboarding'], ['/settings', 'Settings']
+    ['/', 'Overview'], ['/tenants', 'Tenants'], ['/connectors', 'Connectors'], ['/traces', 'Trace Search'], ['/dlq', 'DLQ'], ['/simulation', 'Simulation Studio'], ['/contracts', 'Contracts'], ['/architecture', 'Architecture'], ['/onboarding', 'Onboarding'], ['/settings', 'Settings']
   ];
 </script>
 <svelte:head><title>Enterprise Integration Fabric</title></svelte:head>

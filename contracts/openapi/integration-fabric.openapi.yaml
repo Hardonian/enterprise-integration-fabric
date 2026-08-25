@@ -132,6 +132,16 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { description: Connector not found }
+  /api/tenants/{tenantId}/connectors/{connectorId}/ping:
+    parameters: [ { $ref: '#/components/parameters/TenantId' }, { name: connectorId, in: path, required: true, schema: { type: string } } ]
+    post:
+      operationId: pingConnector
+      summary: Test connector connectivity and measure latency
+      responses:
+        '200': { description: Connector health and latency status }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Connector not found }
   /api/events/{route}:
     post:
       operationId: ingestEvent
@@ -170,6 +180,16 @@ paths:
         '200': { description: DLQ events }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
+  /api/tenants/{tenantId}/dlq/{id}/replay:
+    parameters: [ { $ref: '#/components/parameters/TenantId' }, { name: id, in: path, required: true, schema: { type: string } } ]
+    post:
+      operationId: replayDeadLetterEvent
+      summary: Replay a failed event from the DLQ through the routing engine
+      responses:
+        '200': { description: Replay execution result }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { description: Dead letter event not found }
   /api/tenants/{tenantId}/entitlements:
     get:
       operationId: listEntitlements
@@ -216,6 +236,7 @@ components:
         tenant_id: { type: string }
         connector_id: { type: string }
         correlation_id: { type: string }
+        idempotency_key: { type: string }
         data: { type: object, additionalProperties: true }
     ApiError:
       type: object

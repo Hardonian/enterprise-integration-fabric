@@ -68,17 +68,33 @@ class IntegrationRoutes(private val events: EventRepo, private val tenants: Tena
                 validateData(eventType, data)
                 if (data["forceFailure"] == true) throw IllegalStateException("Forced downstream failure for DLQ verification")
                 val corr = normalized["correlation_id"] as String
+                val idempotencyKey = (incoming["idempotency_key"] as? String) ?: (normalized["id"] as String)
+                val isNew = events.checkAndRecordIdempotency(tenantId, idempotencyKey, normalized["id"] as String)
+                if (!isNew && incoming["idempotency_key"] != null) {
+                    events.trace(tenantId, normalized["id"] as String, corr, routeId, "idempotency-dedup", "DEDUPLICATED", "Event deduplicated via idempotency key: $idempotencyKey")
+                    ex.getIn().setHeader("isDuplicate", true)
+                    ex.getIn().body = normalized + mapOf("status" to "DEDUPLICATED")
+                    return@process
+                }
                 val eventId = events.saveEvent(tenantId, normalized["connector_id"] as? String, eventType, corr, normalized, "ACCEPTED")
                 events.trace(tenantId, eventId, corr, routeId, "validate-persist", "OK", "Payload accepted")
                 ex.getIn().setHeader("eventType", eventType)
                 ex.getIn().setHeader("correlationId", corr)
-                ex.getIn().body = normalized + mapOf("id" to eventId)
+                ex.getIn().body = normalized + mapOf("id" to eventId, "status" to "ACCEPTED")
             }
-            .wireTap("direct:brokerOut")
-            .process { ex ->
-                @Suppress("UNCHECKED_CAST") val body = ex.getIn().body as Map<String, Any?>
-                ex.message.body = mapOf("status" to "ACCEPTED", "event_id" to body["id"], "tenant_id" to body["tenant_id"], "correlation_id" to body["correlation_id"], "type" to body["type"])
-            }
+            .choice()
+                .`when`(header("isDuplicate").isEqualTo(true))
+                    .process { ex ->
+                        @Suppress("UNCHECKED_CAST") val body = ex.getIn().body as Map<String, Any?>
+                        ex.message.body = mapOf("status" to "DEDUPLICATED", "event_id" to body["id"], "tenant_id" to body["tenant_id"], "correlation_id" to body["correlation_id"], "type" to body["type"])
+                    }
+                .`otherwise`()
+                    .wireTap("direct:brokerOut")
+                    .process { ex ->
+                        @Suppress("UNCHECKED_CAST") val body = ex.getIn().body as Map<String, Any?>
+                        ex.message.body = mapOf("status" to "ACCEPTED", "event_id" to body["id"], "tenant_id" to body["tenant_id"], "correlation_id" to body["correlation_id"], "type" to body["type"])
+                    }
+            .end()
     }
 
     private fun envelope(payload: Map<String, Any?>, defaultType: String): Map<String, Any?> {
