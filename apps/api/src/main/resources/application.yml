@@ -7,6 +7,12 @@ spring:
     url: ${DB_URL:jdbc:mariadb://localhost:3306/integration_fabric}
     username: ${DB_USER:fabric}
     password: ${DB_PASSWORD:fabric_dev_password}
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 20000
   flyway:
     enabled: true
   security:
@@ -14,6 +20,13 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8081/realms/integration-fabric}
+  threads:
+    virtual:
+      enabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 app:
   version: ${APP_VERSION:0.1.0}
   dev-auth-enabled: ${DEV_AUTH_ENABLED:false}
@@ -27,4 +40,14 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:http://localhost:4318/v1/traces}

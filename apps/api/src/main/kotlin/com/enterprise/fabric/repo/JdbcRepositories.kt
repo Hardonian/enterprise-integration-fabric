@@ -2,6 +2,8 @@ package com.enterprise.fabric.repo
 
 import com.enterprise.fabric.api.NotFoundException
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.stereotype.Repository
@@ -20,20 +22,30 @@ data class Entitlement(val id: String, val tenantId: String, val subjectId: Stri
 class TenantRepo(private val jdbc: JdbcTemplate) {
     private val mapper = RowMapper { rs: ResultSet, _: Int -> Tenant(rs.getString("id"), rs.getString("name"), rs.getString("status"), rs.getTimestamp("created_at").toInstant()) }
     fun list() = jdbc.query("select * from tenants order by created_at desc", mapper)
+    @Cacheable("tenants")
     fun get(id: String) = jdbc.query("select * from tenants where id=?", mapper, id).firstOrNull() ?: throw NotFoundException("Tenant not found: $id")
+    @CacheEvict("tenants", key = "#t.id")
     fun create(t: Tenant): Tenant { jdbc.update("insert into tenants(id,name,status) values (?,?,?)", t.id, t.name, t.status); return get(t.id) }
+    @CacheEvict("tenants", key = "#id")
     fun update(id: String, t: Tenant): Tenant { get(id); jdbc.update("update tenants set name=?, status=? where id=?", t.name, t.status, id); return get(id) }
+    @CacheEvict("tenants", key = "#id")
     fun delete(id: String) { get(id); jdbc.update("delete from tenants where id=?", id) }
+    @Cacheable("tenantExists")
     fun exists(id: String) = jdbc.queryForObject("select count(*) from tenants where id=?", Long::class.java, id)!! > 0
 }
 
 @Repository
 class ConnectorRepo(private val jdbc: JdbcTemplate, private val tenants: TenantRepo) {
     private val mapper = RowMapper { rs: ResultSet, _: Int -> Connector(rs.getString("id"), rs.getString("tenant_id"), rs.getString("name"), rs.getString("system_type"), rs.getString("base_url"), rs.getString("credential_reference"), rs.getString("status"), rs.getTimestamp("created_at").toInstant()) }
+    @Cacheable("connectorsList", key = "#tenantId")
     fun list(tenantId: String) = jdbc.query("select * from connectors where tenant_id=? order by created_at desc", mapper, tenantId)
+    @Cacheable("connectors", key = "#tenantId + '-' + #id")
     fun get(tenantId: String, id: String) = jdbc.query("select * from connectors where tenant_id=? and id=?", mapper, tenantId, id).firstOrNull() ?: throw NotFoundException("Connector not found for tenant")
+    @CacheEvict(value = ["connectorsList"], key = "#c.tenantId")
     fun create(c: Connector): Connector { tenants.get(c.tenantId); jdbc.update("insert into connectors(id,tenant_id,name,system_type,base_url,credential_reference,status) values (?,?,?,?,?,?,?)", c.id, c.tenantId, c.name, c.systemType, c.baseUrl, c.credentialReference, c.status); return get(c.tenantId, c.id) }
+    @CacheEvict(value = ["connectors", "connectorsList"], key = "#tenantId + '-' + #id")
     fun update(tenantId: String, id: String, c: Connector): Connector { get(tenantId,id); jdbc.update("update connectors set name=?, system_type=?, base_url=?, credential_reference=?, status=? where tenant_id=? and id=?", c.name, c.systemType, c.baseUrl, c.credentialReference, c.status, tenantId, id); return get(tenantId,id) }
+    @CacheEvict(value = ["connectors", "connectorsList"], key = "#tenantId + '-' + #id")
     fun delete(tenantId: String, id: String) { get(tenantId,id); jdbc.update("delete from connectors where tenant_id=? and id=?", tenantId, id) }
 }
 

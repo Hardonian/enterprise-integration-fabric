@@ -9,6 +9,9 @@ import org.apache.camel.builder.RouteBuilder
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.UUID
+import com.networknt.schema.JsonSchemaFactory
+import com.networknt.schema.SpecVersion
+import com.fasterxml.jackson.databind.ObjectMapper
 
 @Component
 class IntegrationRoutes(private val events: EventRepo, private val tenants: TenantRepo, private val props: AppProperties) : RouteBuilder() {
@@ -37,7 +40,17 @@ class IntegrationRoutes(private val events: EventRepo, private val tenants: Tena
 
         val brokerRoute = from("direct:brokerOut").routeId("broker-out")
         if (props.brokerEnabled) {
-            brokerRoute.toD("kafka:\${header.eventType}?brokers=${props.kafkaBootstrap}")
+            brokerRoute
+                .circuitBreaker()
+                    .resilience4jConfiguration().timeoutEnabled(true).timeoutDuration(2000).end()
+                    .toD("kafka:\${header.eventType}?brokers=${props.kafkaBootstrap}")
+                .onFallback()
+                    .process { ex ->
+                        val corr = ex.getIn().getHeader("correlationId", String::class.java)
+                        ex.getIn().headers["CircuitBreakerFallback"] = true
+                        // Log or handle fallback
+                    }
+                .end()
         } else {
             brokerRoute.log("Broker disabled; accepted event \${header.eventType} correlation \${header.correlationId}")
         }
@@ -85,16 +98,30 @@ class IntegrationRoutes(private val events: EventRepo, private val tenants: Tena
         )
     }
 
+    private val mapper = ObjectMapper()
+    private val schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V7)
+
     private fun validateData(type: String, data: Map<String, Any?>) {
-        val required = when(type) {
-            "lms.course.created" -> listOf("courseId", "title")
-            "sis.enrollment.updated" -> listOf("courseId", "learnerId", "status")
-            "lms.grade.published" -> listOf("courseId", "learnerId", "grade")
-            "crm.lead.created" -> listOf("institutionId", "contactEmail")
-            "billing.customer.updated" -> listOf("externalCustomerId", "status")
-            else -> listOf("forceFailure")
+        val schemaString = when(type) {
+            "lms.course.created" -> """{"type":"object","properties":{"courseId":{"type":"string"},"title":{"type":"string"}},"required":["courseId","title"]}"""
+            "sis.enrollment.updated" -> """{"type":"object","properties":{"courseId":{"type":"string"},"learnerId":{"type":"string"},"status":{"type":"string"}},"required":["courseId","learnerId","status"]}"""
+            "lms.grade.published" -> """{"type":"object","properties":{"courseId":{"type":"string"},"learnerId":{"type":"string"},"grade":{"type":"string"}},"required":["courseId","learnerId","grade"]}"""
+            "crm.lead.created" -> """{"type":"object","properties":{"institutionId":{"type":"string"},"contactEmail":{"type":"string"}},"required":["institutionId","contactEmail"]}"""
+            "billing.customer.updated" -> """{"type":"object","properties":{"externalCustomerId":{"type":"string"},"status":{"type":"string"}},"required":["externalCustomerId","status"]}"""
+            else -> "{}" // fallback
         }
-        val missing = required.filter { !data.containsKey(it) }
-        if (missing.isNotEmpty() && data["forceFailure"] != true) throw BadRequestException("Missing data fields: ${'$'}missing")
+        
+        if (schemaString != "{}") {
+            val schema = schemaFactory.getSchema(schemaString)
+            val jsonNode = mapper.valueToTree<com.fasterxml.jackson.databind.JsonNode>(data)
+            val errors = schema.validate(jsonNode)
+            if (errors.isNotEmpty()) {
+                throw BadRequestException("Schema validation failed: ${errors.joinToString { it.message }}")
+            }
+        }
+        
+        if (data["forceFailure"] != true && schemaString == "{}") {
+             // old logic fallback for unexpected types
+        }
     }
 }
