@@ -1,5 +1,9 @@
 # Enterprise Integration Fabric
 
+<!-- BEGIN: REPO HERO -->
+![enterprise-integration-fabric — hero generated locally on the GPU stack](assets/repo-hero.png)
+<!-- END: REPO HERO -->
+
 ## Executive summary
 
 Enterprise Integration Fabric is a production-grade reference architecture for connecting LMS, SIS, CRM, billing, identity, analytics, and support systems through a governed integration layer. It combines Kotlin, Spring Boot 3, Apache Camel 4, Redpanda/Kafka-compatible messaging, Keycloak OIDC, MariaDB, SvelteKit, OpenAPI, AsyncAPI, Docker Compose, Testcontainers, ADRs, runbooks, and Mermaid diagrams.
